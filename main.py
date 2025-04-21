@@ -3,7 +3,7 @@ from openpyxl import Workbook
 wb = Workbook()
 ws = wb.active
 lst = [
-  ["倪昌飞","1,2,3,4"]
+  ["倪昌飞","1,2,3,4"],
   ["李海波","5,6,7,8"]
 ]
 ws['A1'] = lst[0][0]
