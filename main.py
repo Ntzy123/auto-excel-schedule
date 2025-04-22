@@ -15,7 +15,7 @@ class Schedule:
         return name[0],date
     
     # 读取文件内容
-    def load(self,filename):
+    def loadfile(self,filename):
         with open(filename,'r',encoding='utf-8') as file:
             for line in file.readlines():
                 if "#" in line :
@@ -27,18 +27,15 @@ class Schedule:
 
 
 sch = Schedule()
-sch.load('1.txt')
+sch.loadfile('1.txt')
 wb = Workbook()
 ws = wb.active
-ws.append(["星期",])
-for name in sch.name:
-    
-ws['A1'] = lst[0][0]
-ws['B1'] = lst[0][1]
-ws['A2'] = lst[1][0]
-ws['B2'] = lst[1][1]
+for i, name in enumerate(sch.name,start=1):
+    ws.cell(row=i,column=1,value=name)
+    ws.cell(row=i,column=2,value=str(sch.date[i-1]))
+
 wb.save("output.xlsx")
-os.system("echo '已导出 output.xlsx'")
+print("已导出 output.xlsx")
 
 
 #print(sch.name)
