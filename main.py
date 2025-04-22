@@ -1,3 +1,4 @@
+from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.cell.text import InlineFont
 from openpyxl.cell.rich_text import TextBlock, CellRichText
@@ -28,17 +29,32 @@ class Schedule:
         pass
 
 
-
-if __name__ == "__main__":
-    # 初始化
-    sch = Schedule()
-    wb = load_workbook("排班.xlsx")
-    ws = wb.active
+def fetch_year_month():
+    year_now = datetime.now().year
+    month_now = datetime.now().month
     
-    # 获取月份
     while True:
         try:
-            month = int(input("请输入当前月份："))
+            year = input(f"请输入当前年份（默认为{year_now}年）：")
+            if year == "":
+                year = year_now
+                break
+            year = int(year)
+            if 0<=year<=3000:
+                break
+            else:
+                print("请输入正确的年份！")
+
+        except ValueError:
+            print("请输入正确的年份！")
+
+    while True:
+        try:
+            month = int(input(f"请输入当前月份（默认为{month_now}月）："))
+            if month == "":
+                month = month_now
+                break
+            month = int(month)
             if 1<=month<=12:
                 break
             else:
@@ -47,14 +63,36 @@ if __name__ == "__main__":
         except ValueError:
             print("请输入正确的月份！")
 
-    prefix = (f"2025年{month}月21日至2025年{month+1}月20日")
-    red_text = "首钢一期安全员"
-    suffix_text = "考勤排班表"
+    if month == 12:
+        title = (f"{year}年{month}月21日至{year+1}年1月20日首钢一期安全员考勤排班表")
+    else:
+        title = (f"{year}年{month}月21日至{year}年{month+1}月20日首钢一期安全员考勤排班表")
+    return title
 
+def hiidle_text(title,red_text,sz=17,rFont="黑体"):
     rich_text = CellRichText()
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), prefix))
+    start_index = title.find(red_text)
+    end_index = start_index + len(red_text)
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), title[:start_index]))
     rich_text.append(TextBlock(InlineFont(color="C00000",sz=20,rFont="微软雅黑"), red_text))
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), suffix_text))
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), title[end_index:]))
+    return rich_text
+
+
+if __name__ == "__main__":
+    # 初始化
+    sch = Schedule()
+    wb = load_workbook("排班.xlsx")
+    ws = wb.active
+    
+    # 修改表头
+    title = fetch_year_month()
+    red_text = "首钢一期安全员"
+    rich_text = hiidle_text(title,red_text,20,"黑体")
+
+    # 获取列表关键信息导出txt
+    pass
+
     ws['A1'].value = rich_text
     wb.save("output.xlsx")
 
