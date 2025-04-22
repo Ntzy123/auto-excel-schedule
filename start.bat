@@ -1,7 +1,7 @@
-@echo off
+@echo on
 
 python3 -m venv venv
-venv\Scripts\activate
+call venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
-python main.py
+REM python main.py
