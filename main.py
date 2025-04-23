@@ -1,3 +1,5 @@
+import os
+import platform
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.cell.text import InlineFont
@@ -8,14 +10,22 @@ class Schedule:
     name = []
     date = []
 
-    # 分割有效信息
+    # 格式化文本信息
+    def _format(self,str):
+        str = str.replace(" ","")
+        str = str.replace("\t","")
+        str = str.replace("[","")
+        str = str.replace("]","")
+        return str
+    
+    # 分割有效信息（需要重写）
     def _split(self,str):
         str = str.replace("\n","")
         name = str.split("=")
         date = name[1].split(",")
         return name[0],date
     
-    # 读取文件内容（暂时没用）
+    # 读取文件内容（暂时没用，需要重写）
     def loadfile(self,workbook,filename):
         with open(filename,'r',encoding='utf-8') as file:
             for line in file.readlines():
@@ -32,11 +42,36 @@ class Schedule:
         ws = workbook.active
         
         # 处理数据
-        with open("content.txt","w",encoding="utf-8") as file:
-            for index in range(4,19):
-                text = ws.cell(row=index,column=1).value
-                filr.write(text + "=")
+        with open(filename,"w",encoding="utf-8") as file:
+            file.write("# 张三=1,2,3,4   :家中有事需要连休\n")
+            for row_index in range(4,20):
+                if ws.cell(row=row_index,column=1).value == None:
+                    break
+                self.name.append(ws.cell(row=row_index,column=1).value)
+                for column_index in range(2,33): #处理休息日
+                    if ws.cell(row=row_index,column=column_index).value == None:
+                        break
+                    elif ws.cell(row=row_index,column=column_index).value == "休":
+                        self.date.append([])
+                        self.date[row_index-4].append(ws.cell(row=3,column=column_index).value)
+                remark = ws.cell(row=row_index,column=33).value
+                if remark == None:
+                    remark = ""
+                else:
+                    remark = "      :" + remark
+                text = f"{self.name[row_index-4]}={self.date[row_index-4]}{remark}\n"
+                text = text.replace("[","")
+                text = text.replace("]","")
+                file.write(text)
+        
+        # 检测系统并打开txt
+        if platform.system() == "Windows":
+            os.startfile(filename)
                 
+    
+    # 将txt内容导入排班表
+    def importfile(self,workbook,filename):
+        pass
 
 
 # 获取年月
@@ -61,7 +96,7 @@ def fetch_year_month():
 
     while True:
         try:
-            month = int(input(f"请输入当前月份（默认为{month_now}月）："))
+            month = input(f"请输入当前月份（默认为{month_now}月）：")
             if month == "":
                 month = month_now
                 break
@@ -103,10 +138,10 @@ if __name__ == "__main__":
     rich_text = hiidle_text(title,red_text,20,"黑体")
 
     # 获取列表关键信息导出txt
-    pass
+    sch.exportfile(wb,"content.txt")
 
-    ws['A1'].value = rich_text
-    wb.save("output.xlsx")
+    #ws['A1'].value = rich_text
+    #wb.save("output.xlsx")
 
     #for i, name in enumerate(sch.name,start=1):
         #ws.cell(row=i,column=1,value=name)
