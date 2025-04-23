@@ -16,7 +16,7 @@ class Schedule:
         return name[0],date
     
     # 读取文件内容（暂时没用）
-    def loadfile(self,filename):
+    def loadfile(self,workbook,filename):
         with open(filename,'r',encoding='utf-8') as file:
             for line in file.readlines():
                 if "#" in line :
@@ -25,10 +25,21 @@ class Schedule:
                 self.name.append(data[0])
                 self.date.append(data[1])
     
-    def exportfile(self):
-        pass
+    # 导出关键信息txt
+    def exportfile(self,workbook,filename):
+        # 初始化
+        wb = workbook
+        ws = workbook.active
+        
+        # 处理数据
+        with open("content.txt","w",encoding="utf-8") as file:
+            for index in range(4,19):
+                text = ws.cell(row=index,column=1).value
+                filr.write(text + "=")
+                
 
 
+# 获取年月
 def fetch_year_month():
     year_now = datetime.now().year
     month_now = datetime.now().month
@@ -69,6 +80,7 @@ def fetch_year_month():
         title = (f"{year}年{month}月21日至{year}年{month+1}月20日首钢一期安全员考勤排班表")
     return title
 
+#高亮关键字
 def hiidle_text(title,red_text,sz=17,rFont="黑体"):
     rich_text = CellRichText()
     start_index = title.find(red_text)
