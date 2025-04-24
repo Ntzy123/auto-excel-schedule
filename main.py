@@ -9,7 +9,12 @@ from openpyxl.cell.rich_text import TextBlock, CellRichText
 class Schedule:
     name = []
     date = []
+    remark = []
 
+    # 初始化
+    def __init__(self,workbook):
+        self.workbook = workbook
+    
     # 格式化文本信息
     def _format(self,str):
         str = str.replace(" ","")
@@ -18,28 +23,40 @@ class Schedule:
         str = str.replace("]","")
         return str
     
-    # 分割有效信息（需要重写）
+    # 分割有效信息
     def _split(self,str):
+        str = str.strip()
         str = str.replace("\n","")
+        if not str:
+            return None
+        ### 判断有无=，以及=后是否有信息 ###
         name = str.split("=")
         date = name[1].split(",")
-        return name[0],date
+        if ":" in name[1]:
+            remark = name[1].split(":")
+        else:
+            remark = ["",""]
+        
+        return name[0],date,remark[1]
     
-    # 读取文件内容（暂时没用，需要重写）
-    def loadfile(self,workbook,filename):
+    # 读取文件内容
+    def loadfile(self,filename):
         with open(filename,'r',encoding='utf-8') as file:
             for line in file.readlines():
                 if "#" in line :
                     continue
                 data = self._split(line)
-                self.name.append(data[0])
-                self.date.append(data[1])
+                if data != None:
+                    self.name.append(data[0])
+                    self.date.append(data[1])
+                    self.remark.append(data[2])
+                
     
     # 导出关键信息txt
-    def exportfile(self,workbook,filename):
+    def exportfile(self,filename):
         # 初始化
-        wb = workbook
-        ws = workbook.active
+        wb = self.workbook
+        ws = wb.active
         
         # 处理数据
         with open(filename,"w",encoding="utf-8") as file:
@@ -70,8 +87,34 @@ class Schedule:
                 
     
     # 将txt内容导入排班表
-    def importfile(self,workbook,filename):
-        pass
+    def importfile(self,filename):
+        wb = self.workbook
+        ws = wb.active
+        # 格式化
+        with open(filename,"r",encoding="utf-8") as file:
+            content = file.read()
+            content = self._format(content)
+        with open(filename,"w",encoding="utf-8") as file:
+            file.write(content)
+            pass
+        # 读取txt并写入excel
+        with open(filename,"r",encoding="utf-8") as file:
+            self.loadfile(filename)
+            for row_index, name in enumerate(self.name,start=4):
+                ws.cell(row=row_index,column=1,value=self.name[row_index-4])
+                if self.remark[row_index-4] == "":
+                    pass
+                ws.cell(row=row_index,column=3,value=self.remark[row_index-4])
+                # 修改早/晚/休
+                for column_index in range(2,33):
+                    if ws.cell(row=row_index,column=column_index).value in self.date[row_index-4]:
+                        ws.cell(row=row_index,column=column_index).value = hiidle_text("休","休")
+                    else:
+                        if 21 <= ws.cell(row=3,column=column_index).value <= 31:
+                            ws.cell(row=row_index,column=column_index).value = hiidle_text("晚","晚","000000")
+                        elif 2 <= ws.cell(row=3,column=column_index).value <=20:
+                            ws.cell(row=row_index,column=column_index).value = hiidle_text("早","早","000000")
+
 
 
 # 获取年月
@@ -116,36 +159,40 @@ def fetch_year_month():
     return title
 
 #高亮关键字
-def hiidle_text(title,red_text,sz=17,rFont="黑体"):
+def hiidle_text(text,red_text,text_color="C00000",size=17,font_style="黑体"):
     rich_text = CellRichText()
-    start_index = title.find(red_text)
+    if text == red_text:
+        rich_text.append(TextBlock(InlineFont(color="C00000", sz=size, rFont=font_style), text))
+        return rich_text
+    start_index = text.find(red_text)
     end_index = start_index + len(red_text)
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), title[:start_index]))
-    rich_text.append(TextBlock(InlineFont(color="C00000",sz=20,rFont="微软雅黑"), red_text))
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=20,rFont="微软雅黑"), title[end_index:]))
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style), text[:start_index]))
+    rich_text.append(TextBlock(InlineFont(color=text_color,sz=size,rFont=font_style), red_text))
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style), text[end_index:]))
     return rich_text
 
 
 if __name__ == "__main__":
     # 初始化
-    sch = Schedule()
     wb = load_workbook("排班.xlsx")
     ws = wb.active
+    sch = Schedule(wb)
     
     # 修改表头
     title = fetch_year_month()
     red_text = "首钢一期安全员"
-    rich_text = hiidle_text(title,red_text,20,"黑体")
+    title = hiidle_text(title,red_text,size=20,font_style="微软雅黑")
 
     # 获取列表关键信息导出txt
-    sch.exportfile(wb,"content.txt")
-
-    #ws['A1'].value = rich_text
-    #wb.save("output.xlsx")
+    sch.exportfile("content.txt")
+    input("请打开 content.txt 并修改内容，完成后按回车键继续")
+    sch.importfile("content.txt")
+    ws['A1'].value = title
+    wb.save("output.xlsx")
 
     #for i, name in enumerate(sch.name,start=1):
         #ws.cell(row=i,column=1,value=name)
         #ws.cell(row=i,column=2,value=str(sch.date[i-1]))
 
     #wb.save("output.xlsx")
-    #print("已导出 output.xlsx")
+    print("已导出 output.xlsx")
