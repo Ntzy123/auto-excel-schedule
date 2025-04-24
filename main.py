@@ -106,7 +106,7 @@ class Schedule:
             for row_index, name in enumerate(self.name,start=4):
                 i = row_index
                 name = self.name[row_index-4]
-                ws.cell(row=row_index,column=1,value=hiidle_text(name,name,text_color="000000",bold=True))
+                ws.cell(row=row_index,column=1,value=highlight_text(name,name,text_color="000000",bold=True))
                 if self.remark[row_index-4] != "":
                     ws.cell(row=row_index,column=33,value=self.remark[row_index-4])
                 
@@ -129,22 +129,22 @@ class Schedule:
                                 ws.cell(row=row_index,column=column_index_2).value = ""
                     
                     if str(target_date) in self.date[row_index-4]:
-                        ws.cell(row=row_index,column=column_index).value = hiidle_text("休","休")
+                        ws.cell(row=row_index,column=column_index).value = highlight_text("休","休")
                     else:
                         # 修改倒班时间
                         if target_date == to_day or target_date == to_night:
-                            ws.cell(row=row_index,column=column_index).value = hiidle_text("倒","倒",text_color="000000")
+                            ws.cell(row=row_index,column=column_index).value = highlight_text("倒","倒",text_color="000000")
                         else:   # 修改早，晚班
                             if to_day <=20:
                                 if to_night <= target_date <= 31 or target_date < to_day:
-                                    ws.cell(row=row_index,column=column_index).value = hiidle_text("晚","晚",text_color="000000")
+                                    ws.cell(row=row_index,column=column_index).value = highlight_text("晚","晚",text_color="000000")
                                 elif to_day < target_date < to_night:
-                                    ws.cell(row=row_index,column=column_index).value = hiidle_text("早","早",text_color="000000")
+                                    ws.cell(row=row_index,column=column_index).value = highlight_text("早","早",text_color="000000")
                             else:
                                 if to_night < target_date < to_day:
-                                    ws.cell(row=row_index,column=column_index).value = hiidle_text("晚","晚",text_color="000000")
+                                    ws.cell(row=row_index,column=column_index).value = highlight_text("晚","晚",text_color="000000")
                                 elif 1 <= target_date < to_night or to_day < target_date:
-                                    ws.cell(row=row_index,column=column_index).value = hiidle_text("早","早",text_color="000000")
+                                    ws.cell(row=row_index,column=column_index).value = highlight_text("早","早",text_color="000000")
                         
                         
             # 清空剩余表格
@@ -230,18 +230,33 @@ def fetch_day_to_night():
     return to_night
 
 # 高亮关键字
-def hiidle_text(text,red_text,text_color="C00000",size=17,bold=False,font_style="黑体"):
+def highlight_text(text,red_text,text_color="C00000",size=17,bold=False,font_style="黑体"):
     rich_text = CellRichText()
     if text == red_text:
         rich_text.append(TextBlock(InlineFont(color=text_color, sz=size, rFont=font_style, b=bold), text))
         return rich_text
     start_index = text.find(red_text)
     end_index = start_index + len(red_text)
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style, b=bold), text[:start_index]))
-    rich_text.append(TextBlock(InlineFont(color=text_color,sz=size,rFont=font_style), red_text))
-    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style, b=bold), text[end_index:]))
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style), text[:start_index]))
+    rich_text.append(TextBlock(InlineFont(color=text_color,sz=size,rFont=font_style, b=bold), red_text))
+    rich_text.append(TextBlock(InlineFont(color="000000",sz=size,rFont=font_style), text[end_index:]))
     return rich_text
 
+# 高亮部分文本
+def highlight_partial_text(text,text_color="000000"):
+    return TextBlock(InlineFont(color=text_color,sz=17,rFont="黑体",b=True), text)
+
+def remake_text():
+    rich_text = CellRichText()
+    title = ["“√”","“早”","“中”","“晚”","“休”","“事”","“年”","“病”","“节”","“值”","“倒”"]
+    desc = ["表示正常上班;\t\t","表示早班;\t\t","表示中班;\t\t","表示晚班;\t\t","表示休息;\t\t","表示事假;\t\t","表示年假;\t\t\n","表示病假;\t\t","表示法定节假;\t\t","表示值班;\t\t","表示倒班;"]
+    for i in range(len(title)):
+        if i == 4:
+            rich_text.append(highlight_partial_text(title[i],text_color="C00000"))
+        else:
+            rich_text.append(highlight_partial_text(title[i]))
+        rich_text.append(TextBlock(InlineFont(color="000000",sz=17,rFont="黑体"), desc[i]))
+    return rich_text
 
 if __name__ == "__main__":
     if not os.path.isfile("排班.xlsx"):
@@ -256,7 +271,7 @@ if __name__ == "__main__":
     title_year_month = fetch_year_month()
     title = title_year_month[0]
     red_text = "首钢一期安全员"
-    title = hiidle_text(title,red_text,size=20,font_style="微软雅黑")
+    title = highlight_text(title,red_text,size=20,font_style="微软雅黑")
     ws['A1'].value = title
     # 计算月天数
     year = title_year_month[1]
@@ -273,8 +288,12 @@ if __name__ == "__main__":
     to_night = fetch_day_to_night()
     
     sch.importfile("content.txt",to_day,to_night)
-    remark = hiidle_text("  备注：“√”表示正常上班；   “早”表示早班；  “中”表示中班；“晚”表示晚班；“休”表示休息；“事”表示事假；“年”表示年假；“病”表示病假；“节”表示法定节假；“值”表示值班；“倒”表示倒班","“休”",bold=True)
-    ws['A20'].value = remark
+    remark1 = remake_text()
+    # remark1 = highlight_text("  备注：“√”表示正常上班；   “早”表示早班；  “中”表示中班；“晚”表示晚班；“休”表示休息；“事”表示事假；“年”表示年假；“病”表示病假；“节”表示法定节假；“值”表示值班；“倒”表示倒班","“休”",bold=True)
+    remark2 = highlight_text("  1、请各业务端口排班责任人，严格按照端口的考勤时间和规则排班反馈给SSC人事运营岗，请休假必须按流程走请假审批，批准后主动知会同岗位小组成员，方可休假；\n2、上班时间请以整齐工服，佩戴工牌出现在办公场所为准，请各位遵守上下班及休息时间规定。","请各业务端口排班责任人，严格按照端口的考勤时间和规则排班反馈给SSC人事运营岗",bold=True)
+    
+    ws['A20'].value = remark1
+    ws['A21'].value = remark2
 
     wb.save("output.xlsx")
     print("已导出排班表 output.xlsx")
