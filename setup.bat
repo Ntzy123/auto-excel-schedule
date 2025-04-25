@@ -1,5 +1,10 @@
 @echo off
 chcp 65001 >nul 2>&1
+
+REM 检查pip最新版本
+python -m pip install --upgrade pip
+pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
 if not exist venv (
     echo "正在创建虚拟环境"
     python3 -m venv venv
@@ -24,12 +29,12 @@ if errorlevel 1 goto run_command
 
 :run_command
 pyinstaller --onefile --name=auto-excel-schedule main.py
-echo "打包完成，请按任意键继续..."
+echo 打包完成，请按任意键继续...
 pause >nul
 exit
 
 :exit
-echo "请按任意键继续..."
+echo 请按任意键继续...
 pause >nul
 exit
 
